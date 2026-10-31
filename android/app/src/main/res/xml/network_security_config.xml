@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'API de développement est servie en HTTP (pas de TLS) sur le réseau local :
+     on autorise donc le trafic en clair. À retirer si l'API passe en HTTPS. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
