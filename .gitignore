@@ -1,20 +1,5 @@
-# Secrets et configuration locale
-.env
-local.properties
-
-# Node
 node_modules/
-coverage/
-
-# Android / Gradle
-build/
-.gradle/
-.kotlin/
-.idea/
-*.iml
-.cxx/
-.externalNativeBuild/
-captures/
-
-# Système
+.env
+.env.local
+*.log
 .DS_Store

@@ -1,1 +1,1 @@
-# Règles R8 (minification désactivée pour le TP).
+# Règles ProGuard (minification désactivée par défaut en debug).

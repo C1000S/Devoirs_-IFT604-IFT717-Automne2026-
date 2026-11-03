@@ -1,0 +1,15 @@
+# MongoDB pour RépareCampus.
+# Démarrage : docker compose up -d
+# Arrêt     : docker compose down   (ajouter -v pour effacer les données)
+services:
+  mongo:
+    image: mongo:7
+    container_name: repare-campus-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

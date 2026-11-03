@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- L'API de développement est servie en HTTP (pas de TLS) sur le réseau local :
-     on autorise donc le trafic en clair. À retirer si l'API passe en HTTPS. -->
+<!-- Autorise le trafic HTTP en clair vers le serveur local de développement.
+     10.0.2.2 = hôte de la machine vu depuis l'émulateur Android. -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
 </network-security-config>

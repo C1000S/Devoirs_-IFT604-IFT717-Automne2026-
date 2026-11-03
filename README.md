@@ -1,30 +1,40 @@
-# RépareCampus — Devoirs IFT604/IFT717 (Automne 2026)
+# RépareCampus
 
-Dépôt d'équipe des travaux pratiques du cours IFT604/IFT717.
+Clinique de réparation collaborative — devoirs du cours **IFT604/IFT717**
+(Applications Internet et Mobilité), Automne 2026.
 
-## Équipe
+## Membres de l'équipe
 
 | Nom | CIP |
 | --- | --- |
-| NGUEMA Jean Bonheur | nguj3557 |
-| Théotim Dumetz | dumt4378 |
-| Cheikh Ahmadou Tidiane Ly | lyzc3821 |
+| _à compléter_ | _à compléter_ |
 
-## Répartition
+## Composantes
 
-| Membre | Travail |
-| --- | --- |
-| Jean Bonheur | TP1 : API et client Android |
-| Théotim | TP2 : Web |
-| Cheikh | TP3 : sémantique |
+| Dossier | Composante | Remise | État |
+| --- | --- | --- | --- |
+| [`server/`](server/) | **TP1a** — API REST Node.js / MongoDB | 05 nov. 2026 | ✅ Implémenté |
+| `android/` | **TP1b** — Client Android natif (Kotlin / Room) | 05 nov. 2026 | ⏳ À venir |
+| `web/` | **TP2** — Client Web moderne (PWA) | 25 nov. 2026 | ⏳ À venir |
+| (dans `server/`) | **TP3** — Web sémantique (`/data`) | 06 déc. 2026 | ⏳ À venir |
 
-## Contenu
+## Démarrage rapide
 
-| Dossier | Description | Documentation |
-| --- | --- | --- |
-| [`api/`](api/) | TP1a : API REST (Node.js, Express, MongoDB) | [README de l'API](api/README.md) |
-| [`android/`](android/) | TP1b : client Android natif (Kotlin, Jetpack Compose) | [README du client Android](android/README.md) |
+```sh
+# 1. Lancer MongoDB
+docker compose up -d
 
-Le détail de la réalisation du TP1 se trouve dans [CONTRIBUTION-TP1-Bonheur.md](CONTRIBUTION-TP1-Bonheur.md).
+# 2. Lancer l'API
+cd server
+npm install
+cp .env.example .env
+npm run seed      # données + comptes de démonstration
+npm start         # http://localhost:3000
+```
 
-> Le README du client Android nomme l'API `RepareCampus-server` : dans ce dépôt, il s'agit du dossier `api/`.
+Détails, routes, comptes de démonstration et scénarios : voir [`server/README.md`](server/README.md).
+
+## Sécurité
+
+Aucun secret réel (clé privée, mot de passe, secret OAuth) n'est déposé dans le dépôt.
+Seuls les fichiers `*.env.example` sont versionnés ; les `.env` sont ignorés.

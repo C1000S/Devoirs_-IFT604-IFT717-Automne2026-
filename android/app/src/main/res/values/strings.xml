@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">RépareCampus</string>
+    <string name="notification_channel_name">RépareCampus</string>
+    <string name="notification_channel_description">Notifications des demandes de réparation</string>
 </resources>

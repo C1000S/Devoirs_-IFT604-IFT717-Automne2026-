@@ -1,0 +1,176 @@
+### RépareCampus — collection de tests HTTP
+### Compatible avec l'extension VS Code « REST Client » et importable dans Postman.
+### Exécuter les requêtes dans l'ordre : la connexion alimente les variables de jeton.
+
+@baseUrl = http://localhost:3000
+
+### Santé du serveur
+GET {{baseUrl}}/api/health
+
+### --- CONNEXIONS (mot de passe de démo : password123) ---
+
+# @name loginRequester
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "alex@repare.test", "password": "password123" }
+
+###
+@requesterToken = {{loginRequester.response.body.token}}
+
+# @name loginRepairer
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "noah@repare.test", "password": "password123" }
+
+###
+@repairerToken = {{loginRepairer.response.body.token}}
+@repairerId = {{loginRepairer.response.body.user.id}}
+
+# @name loginCoordinator
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "mila@repare.test", "password": "password123" }
+
+###
+@coordinatorToken = {{loginCoordinator.response.body.token}}
+
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "admin@repare.test", "password": "password123" }
+
+###
+@adminToken = {{loginAdmin.response.body.token}}
+
+### Profil courant
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{requesterToken}}
+
+### --- CATÉGORIES ---
+
+# @name categories
+GET {{baseUrl}}/api/categories
+Authorization: Bearer {{requesterToken}}
+
+###
+@categoryId = {{categories.response.body.0.id}}
+
+### --- DEMANDES ---
+
+### Liste de mes demandes (portée par rôle)
+GET {{baseUrl}}/api/repair-requests
+Authorization: Bearer {{requesterToken}}
+
+### Recherche et filtres (coordination voit tout)
+GET {{baseUrl}}/api/repair-requests?status=waiting&q=écran&page=1&limit=10
+Authorization: Bearer {{coordinatorToken}}
+
+### Créer une demande
+# @name created
+POST {{baseUrl}}/api/repair-requests
+Authorization: Bearer {{requesterToken}}
+Content-Type: application/json
+
+{
+  "categoryId": "{{categoryId}}",
+  "device": { "type": "montre connectée", "brand": "NoNameUdS", "model": "W1" },
+  "problemDescription": "Ne se connecte plus au Wifi.",
+  "priority": "normal",
+  "contact": { "method": "email", "value": "alex@repare.test" }
+}
+
+###
+@requestId = {{created.response.body.id}}
+
+### Détail + historique
+GET {{baseUrl}}/api/repair-requests/{{requestId}}
+Authorization: Bearer {{requesterToken}}
+
+### Affecter à un réparateur (coordination)
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/assign
+Authorization: Bearer {{coordinatorToken}}
+Content-Type: application/json
+
+{ "repairerId": "{{repairerId}}" }
+
+### Diagnostic (réparateur assigné) -> in_diagnosis
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/diagnosis
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "notes": "Module Wifi défectueux, remplacement nécessaire." }
+
+### Estimation (réparateur) -> waiting
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/estimate
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "amount": 75, "currency": "CAD", "details": "Module Wifi + main-d'œuvre." }
+
+### Réponse du demandeur -> in_repair (accepted) ou closed (refused)
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/estimate/response
+Authorization: Bearer {{requesterToken}}
+Content-Type: application/json
+
+{ "decision": "accepted" }
+
+### Pièce (réparateur)
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/parts
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "name": "Module Wifi", "quantity": 1, "unitCost": 30, "status": "ordered" }
+
+### Intervention (réparateur)
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/interventions
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "notes": "Remplacement du module Wifi.", "minutesSpent": 25 }
+
+### Passage à l'état prêt à récupérer
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/status
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "status": "ready_for_pickup" }
+
+### Transition INVALIDE (attendu : 409)
+POST {{baseUrl}}/api/repair-requests/{{requestId}}/status
+Authorization: Bearer {{repairerToken}}
+Content-Type: application/json
+
+{ "status": "in_diagnosis" }
+
+### --- NOTIFICATIONS ---
+
+### Mes notifications
+GET {{baseUrl}}/api/notifications
+Authorization: Bearer {{requesterToken}}
+
+### Tout marquer comme lu
+POST {{baseUrl}}/api/notifications/read-all
+Authorization: Bearer {{requesterToken}}
+
+### --- CRÉNEAUX (coordination) ---
+POST {{baseUrl}}/api/slots
+Authorization: Bearer {{coordinatorToken}}
+Content-Type: application/json
+
+{ "start": "2026-11-10T14:00:00Z", "end": "2026-11-10T16:00:00Z", "capacity": 2 }
+
+### --- STATISTIQUES (coordination) ---
+GET {{baseUrl}}/api/stats/overview
+Authorization: Bearer {{coordinatorToken}}
+
+### --- TRAITEMENT NOCTURNE (démo) ---
+POST {{baseUrl}}/api/demo/nightly-batch
+Authorization: Bearer {{coordinatorToken}}
+
+### --- TEMPS RÉEL (SSE) ---
+### À ouvrir dans un terminal : curl -N "http://localhost:3000/api/events?token=<JWT>"
+GET {{baseUrl}}/api/events?token={{requesterToken}}
