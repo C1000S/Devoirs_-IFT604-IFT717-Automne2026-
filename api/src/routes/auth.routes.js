@@ -3,6 +3,7 @@ const User = require("../models/User");
 const { signToken } = require("../utils/jwt");
 const { requireAuth } = require("../middleware/auth");
 const { ROLES } = require("../constants");
+const { asyncHandler } = require("../utils/asyncHandler");
 
 const router = Router();
 
@@ -42,5 +43,15 @@ router.post("/login", async (req, res) => {
 router.get("/me", requireAuth, (req, res) => {
   res.json(req.user.toPublicJSON());
 });
+
+router.patch("/me", requireAuth, asyncHandler(async (req, res) => {
+  const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+  if (!name || name.length > 120) {
+    return res.status(400).json({ error: "Le nom doit comporter entre 1 et 120 caractères." });
+  }
+  req.user.name = name;
+  await req.user.save();
+  res.json(req.user.toPublicJSON());
+}));
 
 module.exports = router;

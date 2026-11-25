@@ -3,10 +3,13 @@ const RepairRequest = require("../models/RepairRequest");
 const RepairEvent = require("../models/RepairEvent");
 const Slot = require("../models/Slot");
 const Part = require("../models/Part");
+const Category = require("../models/Category");
+const User = require("../models/User");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { addEvent, notify } = require("../services/notificationService");
 const { bus } = require("../services/notificationService");
 const { ROLES, REQUEST_STATUSES, ALLOWED_TRANSITIONS, PRIORITIES } = require("../constants");
+const { asyncHandler } = require("../utils/asyncHandler");
 
 const router = Router();
 
@@ -17,13 +20,13 @@ function canView(user, request) {
   if ([ROLES.ADMIN, ROLES.COORDINATOR].includes(user.role)) return true;
   if (user.role === ROLES.REQUESTER) return refId(request.requester) === user._id.toString();
   if (user.role === ROLES.REPAIRER) {
-    return !request.assignedTo || refId(request.assignedTo) === user._id.toString();
+    return request.assignedTo ? refId(request.assignedTo) === user._id.toString() : user.skills.includes(request.category);
   }
   return false;
 }
 
 // GET /api/repair-requests - liste filtrée selon le rôle et les paramètres de recherche.
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, asyncHandler(async (req, res) => {
   const { status, category, priority, assignedTo, requester, hasEstimate, from, to } = req.query;
   const filter = {};
   if (status) filter.status = status;
@@ -43,7 +46,7 @@ router.get("/", requireAuth, async (req, res) => {
   if (req.user.role === ROLES.REQUESTER) {
     filter.requester = req.user._id;
   } else if (req.user.role === ROLES.REPAIRER) {
-    filter.$or = [{ assignedTo: req.user._id }, { assignedTo: null }];
+    filter.$or = [{ assignedTo: req.user._id }, { assignedTo: null, category: { $in: req.user.skills } }];
   }
 
   const requests = await RepairRequest.find(filter)
@@ -51,9 +54,9 @@ router.get("/", requireAuth, async (req, res) => {
     .populate("assignedTo", "name email skills")
     .sort({ createdAt: -1 });
   res.json(requests);
-});
+}));
 
-router.get("/:id", requireAuth, async (req, res) => {
+router.get("/:id", requireAuth, asyncHandler(async (req, res) => {
   const request = await RepairRequest.findById(req.params.id)
     .populate("requester", "name email")
     .populate("assignedTo", "name email skills")
@@ -64,8 +67,8 @@ router.get("/:id", requireAuth, async (req, res) => {
   if (!canView(req.user, request)) return res.status(403).json({ error: "Accès refusé à cette demande." });
 
   const events = await RepairEvent.find({ request: request._id }).populate("actor", "name role").sort({ createdAt: 1 });
-  res.json({ ...request.toObject(), events });
-});
+  res.json({ ...request.toObject(), events, allowedTransitions: ALLOWED_TRANSITIONS[request.status] || [] });
+}));
 
 router.post("/", requireAuth, requireRole(ROLES.REQUESTER, ROLES.ADMIN), async (req, res) => {
   const { category, device, problemDescription, photos, contactMethod, priority } = req.body;
@@ -89,21 +92,68 @@ router.post("/", requireAuth, requireRole(ROLES.REQUESTER, ROLES.ADMIN), async (
   res.status(201).json(request);
 });
 
+// Le propriétaire complète les informations sans modifier les champs du workflow.
+router.patch("/:id", requireAuth, requireRole(ROLES.REQUESTER, ROLES.ADMIN), asyncHandler(async (req, res) => {
+  const request = await RepairRequest.findById(req.params.id);
+  if (!request) return res.status(404).json({ error: "Demande introuvable." });
+  if (refId(request.requester) !== req.user._id.toString()) return res.status(403).json({ error: "Seul le propriétaire peut modifier ces informations." });
+  if (!ALLOWED_TRANSITIONS[request.status]?.length) return res.status(409).json({ error: "Cette demande est terminée." });
+  const { category, device, problemDescription, photos, contactMethod, priority } = req.body;
+  if (category !== undefined && category !== request.category) {
+    if (request.assignedTo) return res.status(409).json({ error: "La catégorie est verrouillée après affectation." });
+    if (typeof category !== "string" || !await Category.exists({ _id: category })) return res.status(400).json({ error: "Catégorie inconnue." });
+    request.category = category;
+  }
+  if (device !== undefined) {
+    if (typeof device?.type !== "string" || !device.type.trim()) return res.status(400).json({ error: "Type d’objet requis." });
+    request.device = { type: device.type, brand: device.brand, model: device.model };
+  }
+  if (problemDescription !== undefined) {
+    if (typeof problemDescription !== "string" || !problemDescription.trim()) return res.status(400).json({ error: "Description requise." });
+    request.problemDescription = problemDescription;
+  }
+  if (photos !== undefined) {
+    if (!Array.isArray(photos) || photos.some(photo => typeof photo !== "string")) return res.status(400).json({ error: "Format des photos invalide." });
+    request.photos = photos;
+  }
+  if (contactMethod !== undefined) {
+    if (typeof contactMethod !== "string") return res.status(400).json({ error: "Moyen de contact invalide." });
+    request.contactMethod = contactMethod;
+  }
+  if (priority !== undefined) {
+    if (!PRIORITIES.includes(priority)) return res.status(400).json({ error: "Priorité invalide." });
+    request.priority = priority;
+  }
+  await request.save();
+  await addEvent({ requestId: request._id, type: "request.updated", message: "Informations de la demande complétées.", actorId: req.user._id });
+  bus.emit("repair-request.updated", request);
+  res.json(request);
+}));
+
 // Tri et affectation (coordination / administration).
-router.patch("/:id/assign", requireAuth, requireRole(ROLES.COORDINATOR, ROLES.ADMIN), async (req, res) => {
+router.patch("/:id/assign", requireAuth, requireRole(ROLES.COORDINATOR, ROLES.ADMIN), asyncHandler(async (req, res) => {
   const { assignedTo } = req.body;
   if (!assignedTo) return res.status(400).json({ error: "assignedTo est requis." });
   const request = await RepairRequest.findById(req.params.id);
   if (!request) return res.status(404).json({ error: "Demande introuvable." });
 
+  if (!ALLOWED_TRANSITIONS[request.status]?.length) return res.status(409).json({ error: "Cette demande est terminée." });
+  const repairer = await User.findById(assignedTo);
+  if (repairer?.role !== ROLES.REPAIRER || !repairer.skills.includes(request.category)) {
+    return res.status(400).json({ error: "Choisissez une personne réparatrice compétente pour cette catégorie." });
+  }
+  const previous = request.assignedTo;
   request.assignedTo = assignedTo;
-  request.status = REQUEST_STATUSES.ASSIGNED;
+  if (request.status === REQUEST_STATUSES.TO_TRIAGE) request.status = REQUEST_STATUSES.ASSIGNED;
   await request.save();
   await addEvent({ requestId: request._id, type: "request.assigned", message: "Demande affectée à une personne réparatrice.", actorId: req.user._id });
   await notify({ userId: assignedTo, title: "Nouvelle demande affectée", message: `Une demande vous a été affectée : ${request.problemDescription}`, requestId: request._id });
+  if (previous && refId(previous) !== assignedTo) {
+    await notify({ userId: previous, title: "Demande réaffectée", message: "Une demande a été confiée à une autre personne réparatrice." });
+  }
   bus.emit("repair-request.updated", request);
   res.json(request);
-});
+}));
 
 // Planification sur un créneau (coordination / administration) : vérifie la
 // capacité du créneau et, le cas échéant, la disponibilité de la personne
@@ -183,7 +233,7 @@ router.patch("/:id/estimate-response", requireAuth, requireRole(ROLES.REQUESTER)
   if (request.requester.toString() !== req.user._id.toString()) {
     return res.status(403).json({ error: "Seule la personne demandeuse peut répondre à l'estimation." });
   }
-  if (!request.estimate?.cost && request.estimate?.cost !== 0) {
+  if (request.estimate?.status !== "pending" || request.status !== REQUEST_STATUSES.WAITING) {
     return res.status(400).json({ error: "Aucune estimation en attente." });
   }
 
