@@ -20,7 +20,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
@@ -30,10 +30,10 @@ app.get("/", (_req, res) => {
     name: "RépareCampus API",
     routes: [
       "GET /api/health",
-      "POST /api/auth/register", "POST /api/auth/login", "GET /api/auth/me",
+      "POST /api/auth/register", "POST /api/auth/login", "GET /api/auth/me", "PATCH /api/auth/me",
       "GET /api/users", "POST /api/users", "PATCH /api/users/:id/role",
       "GET /api/categories", "POST /api/categories", "PATCH /api/categories/:id",
-      "GET /api/repair-requests", "GET /api/repair-requests/:id", "POST /api/repair-requests",
+      "GET /api/repair-requests", "GET /api/repair-requests/:id", "POST /api/repair-requests", "PATCH /api/repair-requests/:id",
       "PATCH /api/repair-requests/:id/assign", "PATCH /api/repair-requests/:id/diagnosis",
       "PATCH /api/repair-requests/:id/estimate", "PATCH /api/repair-requests/:id/estimate-response",
       "POST /api/repair-requests/:id/interventions", "PATCH /api/repair-requests/:id/status",
@@ -73,7 +73,6 @@ async function start() {
     await connectDB(uri);
   } catch (err) {
     console.error("Impossible de se connecter à MongoDB.");
-    console.error(`URI utilisée : ${uri}`);
     console.error("Vérifiez que MongoDB est démarré localement (ex: `brew services start mongodb-community`) ou que MONGODB_URI pointe vers une base valide (ex: MongoDB Atlas).");
     console.error(err.message);
     process.exit(1);

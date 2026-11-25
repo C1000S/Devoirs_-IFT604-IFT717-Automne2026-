@@ -21,7 +21,9 @@ router.get("/", requireAuth, async (req, res) => {
   const isAuthorizedForRequest = async (request) => {
     if ([ROLES.ADMIN, ROLES.COORDINATOR].includes(req.user.role)) return true;
     if (req.user.role === ROLES.REQUESTER) return request.requester?.toString() === req.user._id.toString();
-    if (req.user.role === ROLES.REPAIRER) return !request.assignedTo || request.assignedTo?.toString() === req.user._id.toString();
+    if (req.user.role === ROLES.REPAIRER) {
+      return request.assignedTo ? request.assignedTo.toString() === req.user._id.toString() : req.user.skills.includes(request.category);
+    }
     return false;
   };
 

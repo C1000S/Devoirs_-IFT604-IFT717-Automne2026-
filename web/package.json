@@ -1,0 +1,14 @@
+{
+  "name": "reparecampus-web",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "build": "node tools/build.mjs",
+    "preview": "node tools/serve.mjs dist",
+    "test": "node tools/integration.mjs",
+    "test:api": "node tools/integration.mjs",
+    "test:browser": "node tools/browser.mjs"
+  }
+}
