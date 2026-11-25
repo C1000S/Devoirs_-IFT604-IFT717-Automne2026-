@@ -5,7 +5,11 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {setTimeout as wait} from 'node:timers/promises';
 
-const chrome = process.env.CHROME_BIN || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const defaultChrome = {
+  win32:'C:/Program Files/Google/Chrome/Application/chrome.exe',
+  darwin:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+}[process.platform] || 'google-chrome';
+const chrome = process.env.CHROME_BIN || defaultChrome;
 const appOrigin = process.env.WEB_ORIGIN || 'http://127.0.0.1:5173';
 const profile = await mkdtemp(join(tmpdir(),'reparecampus-chrome-'));
 const port = 19337;
