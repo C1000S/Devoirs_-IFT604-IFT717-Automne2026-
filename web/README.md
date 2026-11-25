@@ -100,4 +100,4 @@ Le scénario navigateur lance une instance Chrome de test et cible l’aperçu d
 npm.cmd run test:browser
 ```
 
-Les résultats et les limites de validation sont consignés dans le [rapport TP2](../CONTRIBUTION-TP2-Theotim.md).
+Les résultats et les limites de validation sont consignés dans le [rapport TP2](../CONTRIBUTION-TP2.md).

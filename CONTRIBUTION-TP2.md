@@ -1,6 +1,6 @@
 # Contribution TP2 · RépareCampus
 
-**Théotim Dumetz (`dumt4378`)**
+**NGUEMA Jean Bonheur Brillant (`nguj3557`) · Théotim Dumetz (`dumt4378`) · Cheikh Ahmadou Tidiane Ly (`lyzc3821`)**
 IFT604/IFT717 · Université de Sherbrooke · Automne 2026
 
 Le client Web dans `web/` couvre les quatre parcours de RépareCampus. Il utilise les mêmes ressources et permissions que le client Android du TP1. Le client fonctionne avec JavaScript natif et le serveur Web utilise les modules intégrés de Node, ce qui permet de le construire sans accès au registre npm. Cette décision a été prise après un échec de résolution de `registry.npmjs.org` dans l’environnement de travail.
