@@ -20,6 +20,6 @@ Dépôt d'équipe des travaux pratiques du cours IFT604/IFT717.
 | [`web/`](web/) | TP2 : client Web progressif | [Installation et démonstration](web/README.md) |
 
 
-Théotim Dumetz (`dumt4378`) présente l’intégration Web, les scénarios et les résultats de validation dans [CONTRIBUTION-TP2.md](CONTRIBUTION-TP2.md).
+NGUEMA Jean Bonheur Brillant (`nguj3557`), Théotim Dumetz (`dumt4378`) et Cheikh Ahmadou Tidiane Ly (`lyzc3821`) présentent l’intégration Web, les scénarios et les résultats de validation dans [CONTRIBUTION-TP2.md](CONTRIBUTION-TP2.md).
 
 > Le README du client Android nomme l'API `RepareCampus-server` : dans ce dépôt, il s'agit du dossier `api/`.

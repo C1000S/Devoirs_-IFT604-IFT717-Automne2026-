@@ -1,6 +1,6 @@
 # RépareCampus · Client Web moderne
 
-TP2 d’IFT604/IFT717, Université de Sherbrooke, automne 2026. Contribution de Théotim Dumetz (`dumt4378`).
+TP2 d’IFT604/IFT717, Université de Sherbrooke, automne 2026. Contribution de NGUEMA Jean Bonheur Brillant (`nguj3557`), Théotim Dumetz (`dumt4378`) et Cheikh Ahmadou Tidiane Ly (`lyzc3821`).
 
 ## Installation sous Windows
 
